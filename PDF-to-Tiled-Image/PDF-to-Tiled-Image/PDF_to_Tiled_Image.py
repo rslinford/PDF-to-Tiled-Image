@@ -9,10 +9,9 @@ from datetime import datetime
 
 """
 Do all the stuff: 
-   1) create target dir based on Date Taken
-   2) rename photos based on Date Taken
-   3) move photos to newly created target dir
-   4) set metadata in photos including Date Taken
+   1) extract images from pdf
+   2) tile images
+   3) save tiled image
 """
 def create_tiled_image(config):
    pass

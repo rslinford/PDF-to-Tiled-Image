@@ -1,1 +1,4 @@
-{"config_file_name": "PDF-to-Tiled-Image_settings.json", "pdf_source_file": "my_pdf_file_with_images.pdf"}
+{
+  "config_file_name": "PDF-to-Tiled-Image_settings.json",
+  "pdf_source_file": "T:\\Scott\\Pictures\\Epson V600 Scan\\1982-10 - film\\1982-10_notes.pdf"
+}
