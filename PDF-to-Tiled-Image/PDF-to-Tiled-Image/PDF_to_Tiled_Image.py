@@ -7,6 +7,8 @@ import piexif
 from datetime import datetime
 import PyPDF2
 import tempfile
+import cv2
+import numpy
 
 def extract_images_from_page(config, page_number, working_dir, xObject, depth=0):
    xObject = xObject['/Resources']['/XObject'].getObject()
@@ -40,9 +42,9 @@ def extract_images_from_page(config, page_number, working_dir, xObject, depth=0)
       else:
          extract_images_from_page(config, page_number, working_dir, xObject[obj], depth = depth + 1)
 
-def calculate_normalized_width_sum(rowofimages, starting_normal_length):
+def calculate_normalized_width_sum(row_of_images, starting_normal_length):
    nws = 0
-   for p in rowofimages:
+   for p in row_of_images:
       im = Image.open(p)
       if im.width >= im.height:
          nws += starting_normal_length
@@ -50,18 +52,21 @@ def calculate_normalized_width_sum(rowofimages, starting_normal_length):
          nws += (starting_normal_length / im.height) * im.width
    return nws
 
-def resize_images(rowofimages, starting_normal_length, f):
+def resize_images(row_of_images, starting_normal_length, resize_factor):
    resized_images = []
-   for p in rowofimages:
+   tallest_height = 0
+   for p in row_of_images:
       im = Image.open(p)
       if im.width >= im.height:
          g = starting_normal_length / im.width
       else:
          g = starting_normal_length / im.height
-      w = int(im.width * g * f)
-      h = int(im.height * g * f)
+      w = int(im.width * g * resize_factor)
+      h = int(im.height * g * resize_factor)
       resized_images.append(im.resize((w, h)))
-   return resized_images
+      if h > tallest_height:
+         tallest_height = h
+   return resized_images, tallest_height
 
 def calculate_resize_factor(config, normalized_width_sum):
    return (config['canvas_width'] - (config['spacer_width'] * (config['images_per_row']+2))) / normalized_width_sum
@@ -78,8 +83,16 @@ def create_collage(config, width, height, list_of_images):
       nws = calculate_normalized_width_sum(row_of_images, starting_normal_length)
       resize_factor = calculate_resize_factor(config, nws)
       print('%d] nws(%d) x f(%f) = %f' % (j, nws, resize_factor, nws * resize_factor))
-      resized_images = resize_images(row_of_images, starting_normal_length, resize_factor)
+      resized_images, tallest_height = resize_images(row_of_images, starting_normal_length, resize_factor)
+      canvas_height = tallest_height + (2 * config['spacer_height'])
+      row_image = Image.new('RGB', (config['canvas_width'], canvas_height))
+
+      cv2.imshow('row_image', cv2.cvtColor(numpy.array(row_image), cv2.COLOR_RGB2BGR))
+      cv2.waitKey(0)
+
       j += config['images_per_row']
+   cv2.destroyAllWindows()
+
    cols = 4
    rows = 2
    thumbnail_width = width//cols
@@ -156,8 +169,9 @@ def normalize_config(config):
    config['config_file_name'] = config.get('config_file_name', r'PDF-to-Tiled-Image_settings.json')
    config['pdf_source_file'] = config.get('pdf_source_file', 'my_pdf_file_with_images.pdf')
    config['images_per_row'] = config.get('images_per_row', 6)
+   config['canvas_width'] = config.get('canvas_width', 6000)
    config['spacer_width'] = config.get('spacer_width', 20)
-   config['spacer_height'] = config.get('spacer_height', 6000)
+   config['spacer_height'] = config.get('spacer_height', 20)
 
 def create_default_config(config_file_name):
    config = {'config_file_name':config_file_name}
