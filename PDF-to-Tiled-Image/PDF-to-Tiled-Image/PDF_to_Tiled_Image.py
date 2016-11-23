@@ -69,7 +69,21 @@ def resize_images(row_of_images, starting_normal_length, resize_factor):
    return resized_images, tallest_height
 
 def calculate_resize_factor(config, normalized_width_sum):
-   return (config['canvas_width'] - (config['spacer_width'] * (config['images_per_row']+2))) / normalized_width_sum
+   return (config['canvas_width'] - (config['spacer_width'] * (config['images_per_row']/2*3))) / normalized_width_sum
+
+def show_image(window_name, pil_rgb_image):
+      cv2.imshow(window_name, cv2.cvtColor(numpy.array(pil_rgb_image), cv2.COLOR_RGB2BGR))
+      cv2.waitKey(0)
+def layout_images_on_canvas(config, resized_images, row_canvas):
+   x = config['spacer_width']
+   y = config['spacer_height']
+   odd = False
+   for p in resized_images:
+      row_canvas.paste(p, (x,y))
+      x += config['spacer_width'] + p.width
+      if odd:
+         x += config['spacer_width']
+      odd = not odd
 
 def create_collage(config, width, height, list_of_images):
    j = config['images_per_row']
@@ -85,10 +99,10 @@ def create_collage(config, width, height, list_of_images):
       print('%d] nws(%d) x f(%f) = %f' % (j, nws, resize_factor, nws * resize_factor))
       resized_images, tallest_height = resize_images(row_of_images, starting_normal_length, resize_factor)
       canvas_height = tallest_height + (2 * config['spacer_height'])
-      row_image = Image.new('RGB', (config['canvas_width'], canvas_height))
+      row_canvas = Image.new('RGB', (config['canvas_width'], canvas_height))
+      layout_images_on_canvas(config, resized_images, row_canvas)
 
-      cv2.imshow('row_image', cv2.cvtColor(numpy.array(row_image), cv2.COLOR_RGB2BGR))
-      cv2.waitKey(0)
+      show_image('row_image', row_canvas)
 
       j += config['images_per_row']
    cv2.destroyAllWindows()
