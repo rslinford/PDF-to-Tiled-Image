@@ -40,7 +40,41 @@ def extract_images_from_page(config, page_number, working_dir, xObject, depth=0)
       else:
          extract_images_from_page(config, page_number, working_dir, xObject[obj], depth = depth + 1)
 
-def create_collage(width, height, listofimages):
+def normalized_width_sum(rowofimages, starting_normal_length):
+   nws = 0
+   for p in rowofimages:
+      im = Image.open(p)
+      if im.width >= im.height:
+         nws += starting_normal_length
+      else:
+         nws += (starting_normal_length / im.height) * im.width
+   return nws
+
+def resize_images(rowofimages, starting_normal_length, f):
+   resized_images = []
+   for p in rowofimages:
+      im = Image.open(p)
+      if im.width >= im.height:
+         g = starting_normal_length / im.width
+      else:
+         g = starting_normal_length / im.height
+      w = int(im.width * g * f)
+      h = int(im.height * g * f)
+      resized_images.append(im.resize((w, h)))
+   return resized_images
+
+def create_collage(config, width, height, listofimages):
+   j = config['images_per_row']
+   while(len(listofimages[j - config['images_per_row']:j]) > 0):
+      rowofimages = listofimages[j - config['images_per_row']:j]
+      # TODO: special case for last row with fewer images
+      starting_normal_length = 2000
+      nws = normalized_width_sum(rowofimages, starting_normal_length)
+      f = (config['canvas_width'] - (config['spacer_width'] * (config['images_per_row']+2))) / nws
+      print('%d] nws(%d) x f(%f) = %f' % (j, nws, f, nws * f))
+      resized_images = resize_images(rowofimages, starting_normal_length, f)
+      print(resized_images)
+      j += config['images_per_row']
    cols = 4
    rows = 2
    thumbnail_width = width//cols
@@ -70,7 +104,7 @@ def tile_images(config, working_dir):
    for filename in os.listdir(working_dir):
        filepath = os.path.join(working_dir, filename)
        filelist.append(filepath)
-   create_collage(1920, 1080, filelist)
+   create_collage(config, 1920, 1080, filelist)
 
 def clean_up_working_files(working_dir):
    for filename in os.listdir(working_dir):
@@ -116,6 +150,9 @@ def save_config(config):
 def normalize_config(config):
    config['config_file_name'] = config.get('config_file_name', r'PDF-to-Tiled-Image_settings.json')
    config['pdf_source_file'] = config.get('pdf_source_file', 'my_pdf_file_with_images.pdf')
+   config['images_per_row'] = config.get('images_per_row', 6)
+   config['spacer_width'] = config.get('spacer_width', 20)
+   config['spacer_height'] = config.get('spacer_height', 6000)
 
 def create_default_config(config_file_name):
    config = {'config_file_name':config_file_name}

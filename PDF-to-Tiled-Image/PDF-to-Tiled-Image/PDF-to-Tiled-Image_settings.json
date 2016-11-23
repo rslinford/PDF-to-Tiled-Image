@@ -1,4 +1,8 @@
 {
   "config_file_name": "PDF-to-Tiled-Image_settings.json",
+  "images_per_row": 6,
+  "canvas_width": 6000,
+  "spacer_width": 20,
+  "spacer_height": 20,
   "pdf_source_file": "T:\\Scott\\Pictures\\Epson V600 Scan\\1982-10 - film\\1982-10_notes.pdf"
 }
