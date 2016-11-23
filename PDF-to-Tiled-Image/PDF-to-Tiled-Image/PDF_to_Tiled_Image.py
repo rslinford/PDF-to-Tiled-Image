@@ -40,7 +40,7 @@ def extract_images_from_page(config, page_number, working_dir, xObject, depth=0)
       else:
          extract_images_from_page(config, page_number, working_dir, xObject[obj], depth = depth + 1)
 
-def normalized_width_sum(rowofimages, starting_normal_length):
+def calculate_normalized_width_sum(rowofimages, starting_normal_length):
    nws = 0
    for p in rowofimages:
       im = Image.open(p)
@@ -63,17 +63,22 @@ def resize_images(rowofimages, starting_normal_length, f):
       resized_images.append(im.resize((w, h)))
    return resized_images
 
-def create_collage(config, width, height, listofimages):
+def calculate_resize_factor(config, normalized_width_sum):
+   return (config['canvas_width'] - (config['spacer_width'] * (config['images_per_row']+2))) / normalized_width_sum
+
+def create_collage(config, width, height, list_of_images):
    j = config['images_per_row']
-   while(len(listofimages[j - config['images_per_row']:j]) > 0):
-      rowofimages = listofimages[j - config['images_per_row']:j]
+   while(len(list_of_images[j - config['images_per_row']:j]) > 0):
+      row_of_images = list_of_images[j - config['images_per_row']:j]
       # TODO: special case for last row with fewer images
+
+      # The longest edge of each image will be normalized to starting_normal_length. It's only a 'starting' length
+      # because all images will then be resized to fit the canvas width.
       starting_normal_length = 2000
-      nws = normalized_width_sum(rowofimages, starting_normal_length)
-      f = (config['canvas_width'] - (config['spacer_width'] * (config['images_per_row']+2))) / nws
-      print('%d] nws(%d) x f(%f) = %f' % (j, nws, f, nws * f))
-      resized_images = resize_images(rowofimages, starting_normal_length, f)
-      print(resized_images)
+      nws = calculate_normalized_width_sum(row_of_images, starting_normal_length)
+      resize_factor = calculate_resize_factor(config, nws)
+      print('%d] nws(%d) x f(%f) = %f' % (j, nws, resize_factor, nws * resize_factor))
+      resized_images = resize_images(row_of_images, starting_normal_length, resize_factor)
       j += config['images_per_row']
    cols = 4
    rows = 2
@@ -82,7 +87,7 @@ def create_collage(config, width, height, listofimages):
    size = thumbnail_width, thumbnail_height
    new_im = Image.new('RGB', (width, height))
    ims = []
-   for p in listofimages:
+   for p in list_of_images:
       im = Image.open(p)
       im.thumbnail(size)
       ims.append(im)
