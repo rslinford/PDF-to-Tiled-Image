@@ -74,7 +74,8 @@ def calculate_resize_factor(config, normalized_width_sum):
 def show_image(window_name, pil_rgb_image):
       cv2.imshow(window_name, cv2.cvtColor(numpy.array(pil_rgb_image), cv2.COLOR_RGB2BGR))
       cv2.waitKey(0)
-def layout_images_on_canvas(config, resized_images, row_canvas):
+
+def layout_images_on_canvas_row(config, resized_images, row_canvas):
    x = config['spacer_width']
    y = config['spacer_height']
    odd = False
@@ -85,8 +86,10 @@ def layout_images_on_canvas(config, resized_images, row_canvas):
          x += config['spacer_width']
       odd = not odd
 
-def create_collage(config, width, height, list_of_images):
+def layout_rows(config, list_of_images):
    j = config['images_per_row']
+   canvas_row_list = []
+   stacked_rows_height = 0
    while(len(list_of_images[j - config['images_per_row']:j]) > 0):
       row_of_images = list_of_images[j - config['images_per_row']:j]
       # TODO: special case for last row with fewer images
@@ -96,40 +99,26 @@ def create_collage(config, width, height, list_of_images):
       starting_normal_length = 2000
       nws = calculate_normalized_width_sum(row_of_images, starting_normal_length)
       resize_factor = calculate_resize_factor(config, nws)
-      print('%d] nws(%d) x f(%f) = %f' % (j, nws, resize_factor, nws * resize_factor))
       resized_images, tallest_height = resize_images(row_of_images, starting_normal_length, resize_factor)
       canvas_height = tallest_height + (2 * config['spacer_height'])
-      row_canvas = Image.new('RGB', (config['canvas_width'], canvas_height))
-      layout_images_on_canvas(config, resized_images, row_canvas)
-
-      show_image('row_image', row_canvas)
-
+      canvas_row = Image.new('RGB', (config['canvas_width'], canvas_height))
+      layout_images_on_canvas_row(config, resized_images, canvas_row)
+      stacked_rows_height += canvas_row.height
+      canvas_row_list.append(canvas_row)
       j += config['images_per_row']
-   cv2.destroyAllWindows()
+   return canvas_row_list, stacked_rows_height
 
-   cols = 4
-   rows = 2
-   thumbnail_width = width//cols
-   thumbnail_height = height//rows
-   size = thumbnail_width, thumbnail_height
-   new_im = Image.new('RGB', (width, height))
-   ims = []
-   for p in list_of_images:
-      im = Image.open(p)
-      im.thumbnail(size)
-      ims.append(im)
-   i = 0
-   x = 0
+
+def create_collage(config, width, height, list_of_images):
+   canvas_row_list, stacked_rows_height = layout_rows(config, list_of_images)
+   canvas = Image.new('RGB', (config['canvas_width'], stacked_rows_height))
    y = 0
-   for col in range(cols):
-      for row in range(rows):
-         print(i, x, y)
-         new_im.paste(ims[i], (x, y))
-         i += 1
-         y += thumbnail_height
-      x += thumbnail_width
-      y = 0
-   new_im.save("Collage.jpg")
+   for p in canvas_row_list:
+      canvas.paste(p, (0, y))
+      y += p.height
+
+   # TODO: save in the right place
+   canvas.save("Collage.jpg")
 
 def tile_images(config, working_dir):
    filelist = []
@@ -182,10 +171,10 @@ def save_config(config):
 def normalize_config(config):
    config['config_file_name'] = config.get('config_file_name', r'PDF-to-Tiled-Image_settings.json')
    config['pdf_source_file'] = config.get('pdf_source_file', 'my_pdf_file_with_images.pdf')
-   config['images_per_row'] = config.get('images_per_row', 6)
-   config['canvas_width'] = config.get('canvas_width', 6000)
-   config['spacer_width'] = config.get('spacer_width', 20)
-   config['spacer_height'] = config.get('spacer_height', 20)
+   config['images_per_row'] = config.get('images_per_row', 4)
+   config['canvas_width'] = config.get('canvas_width', 1000)
+   config['spacer_width'] = config.get('spacer_width', 10)
+   config['spacer_height'] = config.get('spacer_height', 10)
 
 def create_default_config(config_file_name):
    config = {'config_file_name':config_file_name}
