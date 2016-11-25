@@ -117,8 +117,9 @@ def create_collage(config, width, height, list_of_images):
       canvas.paste(p, (0, y))
       y += p.height
 
-   # TODO: save in the right place
-   canvas.save("Collage.jpg")
+   basedir, pdf_filename = os.path.split(config['pdf_source_file'])
+   jpg_filename = '%s.jpg' % pdf_filename[:-4]
+   canvas.save(os.path.join(basedir, jpg_filename))
 
 def tile_images(config, working_dir):
    filelist = []
