@@ -240,3 +240,4 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
+/PDF-to-Tiled-Image/PDF-to-Tiled-Image/PDF-to-Tiled-Image_settings.json
