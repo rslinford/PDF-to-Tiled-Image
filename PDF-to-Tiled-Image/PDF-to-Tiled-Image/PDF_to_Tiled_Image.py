@@ -109,7 +109,7 @@ def layout_rows(config, list_of_images):
    return canvas_row_list, stacked_rows_height
 
 
-def create_collage(config, width, height, list_of_images):
+def create_collage(config, pdf_filename, list_of_images):
    canvas_row_list, stacked_rows_height = layout_rows(config, list_of_images)
    canvas = Image.new('RGB', (config['canvas_width'], stacked_rows_height))
    y = 0
@@ -117,16 +117,16 @@ def create_collage(config, width, height, list_of_images):
       canvas.paste(p, (0, y))
       y += p.height
 
-   basedir, pdf_filename = os.path.split(config['pdf_source_file'])
+   basedir, pdf_filename = os.path.split(pdf_filename)
    jpg_filename = '%s.jpg' % pdf_filename[:-4]
    canvas.save(os.path.join(basedir, jpg_filename))
 
-def tile_images(config, working_dir):
+def tile_images(config, pdf_filename, working_dir):
    filelist = []
    for filename in os.listdir(working_dir):
        filepath = os.path.join(working_dir, filename)
        filelist.append(filepath)
-   create_collage(config, 1920, 1080, filelist)
+   create_collage(config, pdf_filename, filelist)
 
 def clean_up_working_files(working_dir):
    for filename in os.listdir(working_dir):
@@ -134,10 +134,10 @@ def clean_up_working_files(working_dir):
        os.remove(filepath)
    os.removedirs(working_dir)
 
-def extract_images_from_all_pages(config, working_dir):
-   pdf_object = PyPDF2.PdfFileReader(open(config['pdf_source_file'], 'rb'))
+def extract_images_from_all_pages(config, pdf_filename, working_dir):
+   pdf_object = PyPDF2.PdfFileReader(open(pdf_filename, 'rb'))
    page_count = pdf_object.getNumPages()
-   print('%d pages in %s' % (page_count, config['pdf_source_file']))
+   print('%d pages in %s' % (page_count, pdf_filename))
    for p in range(page_count):
       page_object = pdf_object.getPage(p)
       extract_images_from_page(config, p, working_dir, page_object)
@@ -149,10 +149,10 @@ Do all the stuff:
    3) save tiled image
    4) clean up working files
 """
-def create_tiled_image(config):
+def create_tiled_image(config, pdf_filename):
    working_dir = tempfile.mkdtemp(prefix = 'pdf-to-tiled_')
-   extract_images_from_all_pages(config, working_dir)
-   tile_images(config, working_dir)
+   extract_images_from_all_pages(config, pdf_filename, working_dir)
+   tile_images(config, pdf_filename, working_dir)
    clean_up_working_files(working_dir)
 
 ################# BEGIN Main Template With Config ######################
@@ -195,8 +195,16 @@ def main():
 
    try:
       config = load_config(config_file_name)
-      if not os.path.isfile(config['pdf_source_file']):
-         print('pdf_source_file is not a file:\n\t%s' % config['pdf_source_file'])
+      pdf_list = []
+      if os.path.isdir(config['pdf_source_file']):
+         for p in os.listdir(config['pdf_source_file']):
+            fp = os.path.join(config['pdf_source_file'], p)
+            if os.path.isfile(fp) and fp[-4:] == '.pdf':
+               pdf_list.append(fp)
+      elif os.path.isfile(config['pdf_source_file']):
+         pdf_list.append(config['pdf_source_file'])
+      else:
+         print('pdf_source_file is not a file or directory:\n\t%s' % config['pdf_source_file'])
          print_config_file(config)
          return 1
       normalize_config(config)
@@ -204,7 +212,13 @@ def main():
       create_default_config(config_file_name)
       raise
 
-   create_tiled_image(config)
+   if len(pdf_list) == 0:
+      print('No pdf files found in directory:\n\t%s' % config['pdf_source_file'])
+      print_config_file(config)
+      return 1
+
+   for pdf_filename in pdf_list:
+      create_tiled_image(config, pdf_filename)
 
 if __name__ == '__main__':
    try:
