@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 import traceback
 import json
@@ -142,6 +143,14 @@ def extract_images_from_all_pages(config, pdf_filename, working_dir):
       page_object = pdf_object.getPage(p)
       extract_images_from_page(config, p, working_dir, page_object)
 
+def copy_images_to_pdf_dir(config, pdf_filename, working_dir):
+   target_dir = os.path.split(pdf_filename)[0]
+   for p in os.listdir(working_dir):
+      sfp = os.path.join(working_dir, p)
+      #tfp = os.path.join(target_dir, p)
+      shutil.copy(sfp, target_dir)
+      #os.rename(sfp, tfp)
+
 """
 Do all the stuff: 
    1) extract images from pdf
@@ -153,6 +162,8 @@ def create_tiled_image(config, pdf_filename):
    working_dir = tempfile.mkdtemp(prefix = 'pdf-to-tiled_')
    extract_images_from_all_pages(config, pdf_filename, working_dir)
    tile_images(config, pdf_filename, working_dir)
+   if config['keep_images']:
+      copy_images_to_pdf_dir(config, pdf_filename, working_dir)
    clean_up_working_files(working_dir)
 
 ################# BEGIN Main Template With Config ######################
@@ -172,6 +183,7 @@ def save_config(config):
 def normalize_config(config):
    config['config_file_name'] = config.get('config_file_name', r'PDF-to-Tiled-Image_settings.json')
    config['pdf_source_file'] = config.get('pdf_source_file', 'my_pdf_file_with_images.pdf')
+   config['keep_images'] = config.get('keep_images', False)
    config['images_per_row'] = config.get('images_per_row', 4)
    config['canvas_width'] = config.get('canvas_width', 1000)
    config['spacer_width'] = config.get('spacer_width', 10)
