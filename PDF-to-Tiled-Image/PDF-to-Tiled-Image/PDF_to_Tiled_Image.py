@@ -1,15 +1,9 @@
 import os
 import shutil
-import sys
-import traceback
 import json
 from PIL import Image
-import piexif
-from datetime import datetime
 import PyPDF2
 import tempfile
-import cv2
-import numpy
 
 def extract_images_from_page(config, page_number, working_dir, xObject, depth=0):
    xObject = xObject['/Resources']['/XObject'].getObject()
@@ -71,10 +65,6 @@ def resize_images(row_of_images, starting_normal_length, resize_factor):
 
 def calculate_resize_factor(config, normalized_width_sum):
    return (config['canvas_width'] - (config['spacer_width'] * (config['images_per_row']/2*3))) / normalized_width_sum
-
-def show_image(window_name, pil_rgb_image):
-      cv2.imshow(window_name, cv2.cvtColor(numpy.array(pil_rgb_image), cv2.COLOR_RGB2BGR))
-      cv2.waitKey(0)
 
 def layout_images_on_canvas_row(config, resized_images, row_canvas):
    x = config['spacer_width']
