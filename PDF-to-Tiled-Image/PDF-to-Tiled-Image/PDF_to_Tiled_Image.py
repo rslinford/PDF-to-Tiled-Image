@@ -159,7 +159,7 @@ def create_tiled_image(config, pdf_filename):
 ################# BEGIN Main Template With Config ######################
 
 def print_config_file(config):
-   print('Config file located at:\n\t%s\nPoint "pdf_source_file" path to your files. Use fully qualified path or relative path. Current working directory:\n\t%s' \
+   print('Config file located at:\n\t%s\nPoint "pdf_source_file_or_dir" path to your files. Use fully qualified path or relative path. Current working directory:\n\t%s' \
       % (config['config_file_name'], os.getcwd()))
    print('Current config contents:')
    with open(config['config_file_name'], 'r') as f:
@@ -172,7 +172,7 @@ def save_config(config):
 
 def normalize_config(config):
    config['config_file_name'] = config.get('config_file_name', r'PDF-to-Tiled-Image_settings.json')
-   config['pdf_source_file'] = config.get('pdf_source_file', 'my_pdf_file_with_images.pdf')
+   config['pdf_source_file_or_dir'] = config.get('pdf_source_file_or_dir', 'my_pdf_file_with_images.pdf')
    config['keep_images'] = config.get('keep_images', False)
    config['images_per_row'] = config.get('images_per_row', 4)
    config['canvas_width'] = config.get('canvas_width', 1000)
@@ -197,25 +197,26 @@ def main():
 
    try:
       config = load_config(config_file_name)
+      normalize_config(config)
+      config['pdf_source_file_or_dir'] = os.path.abspath(config['pdf_source_file_or_dir'])
       pdf_list = []
-      if os.path.isdir(config['pdf_source_file']):
-         for p in os.listdir(config['pdf_source_file']):
-            fp = os.path.join(config['pdf_source_file'], p)
+      if os.path.isdir(config['pdf_source_file_or_dir']):
+         for p in os.listdir(config['pdf_source_file_or_dir']):
+            fp = os.path.join(config['pdf_source_file_or_dir'], p)
             if os.path.isfile(fp) and fp[-4:] == '.pdf':
                pdf_list.append(fp)
-      elif os.path.isfile(config['pdf_source_file']):
-         pdf_list.append(config['pdf_source_file'])
+      elif os.path.isfile(config['pdf_source_file_or_dir']):
+         pdf_list.append(config['pdf_source_file_or_dir'])
       else:
-         print('pdf_source_file is not a file or directory:\n\t%s' % config['pdf_source_file'])
+         print('pdf_source_file_or_dir is not a file or directory:\n\t%s' % config['pdf_source_file_or_dir'])
          print_config_file(config)
          return 1
-      normalize_config(config)
    except (FileNotFoundError):
       create_default_config(config_file_name)
       raise
 
    if len(pdf_list) == 0:
-      print('No pdf files found in directory:\n\t%s' % config['pdf_source_file'])
+      print('No pdf files found in directory:\n\t%s' % config['pdf_source_file_or_dir'])
       print_config_file(config)
       return 1
 
