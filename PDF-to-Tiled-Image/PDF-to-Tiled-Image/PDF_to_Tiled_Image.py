@@ -21,20 +21,26 @@ def extract_images_from_page(config, page_number, working_dir, xObject, depth=0)
 
             image_path = os.path.join(working_dir, 'image-p%03d-d%03d-i%03d' % (page_number, depth, image_number))
 
-            if xObject[obj]['/Filter'] == '/FlateDecode':
+            filter_name = xObject[obj]['/Filter']
+            if isinstance(filter_name, list):
+                filter_name = filter_name[0]
+
+            if filter_name == '/FlateDecode':
                 img = Image.frombytes(mode, size, data)
                 img.save(image_path + ".png")
                 image_number += 1
-            elif xObject[obj]['/Filter'] == '/DCTDecode':
+            elif filter_name == '/DCTDecode':
                 img = open(image_path + ".jpg", "wb")
                 img.write(data)
                 img.close()
                 image_number += 1
-            elif xObject[obj]['/Filter'] == '/JPXDecode':
+            elif filter_name == '/JPXDecode':
                 img = open(image_path + ".jp2", "wb")
                 img.write(data)
                 img.close()
                 image_number += 1
+            else:
+                print('Unknown image filter(%s) at page number %d' % (filter_name, image_number))
         else:
             extract_images_from_page(config, page_number, working_dir, xObject[obj], depth=depth + 1)
 
