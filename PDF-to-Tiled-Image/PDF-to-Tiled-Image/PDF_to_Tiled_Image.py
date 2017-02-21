@@ -7,36 +7,36 @@ import tempfile
 
 
 def extract_images_from_page(config, page_number, working_dir, xObject, depth=0):
-    x_object = x_object['/Resources']['/XObject'].getObject()
+    xObject = xObject['/Resources']['/XObject'].getObject()
     image_number = 0
-    for obj in x_object:
+    for obj in xObject:
 
-        if x_object[obj]['/Subtype'] == '/Image':
-            size = (x_object[obj]['/Width'], x_object[obj]['/Height'])
-            data = x_object[obj]._data
-            if x_object[obj]['/ColorSpace'] == '/DeviceRGB':
+        if xObject[obj]['/Subtype'] == '/Image':
+            size = (xObject[obj]['/Width'], xObject[obj]['/Height'])
+            data = xObject[obj]._data
+            if xObject[obj]['/ColorSpace'] == '/DeviceRGB':
                 mode = "RGB"
             else:
                 mode = "P"
 
             image_path = os.path.join(working_dir, 'image-p%03d-d%03d-i%03d' % (page_number, depth, image_number))
 
-            if x_object[obj]['/Filter'] == '/FlateDecode':
+            if xObject[obj]['/Filter'] == '/FlateDecode':
                 img = Image.frombytes(mode, size, data)
                 img.save(image_path + ".png")
                 image_number += 1
-            elif x_object[obj]['/Filter'] == '/DCTDecode':
+            elif xObject[obj]['/Filter'] == '/DCTDecode':
                 img = open(image_path + ".jpg", "wb")
                 img.write(data)
                 img.close()
                 image_number += 1
-            elif x_object[obj]['/Filter'] == '/JPXDecode':
+            elif xObject[obj]['/Filter'] == '/JPXDecode':
                 img = open(image_path + ".jp2", "wb")
                 img.write(data)
                 img.close()
                 image_number += 1
         else:
-            extract_images_from_page(config, page_number, working_dir, x_object[obj], depth=depth + 1)
+            extract_images_from_page(config, page_number, working_dir, xObject[obj], depth=depth + 1)
 
 
 def calculate_normalized_width_sum(row_of_images, starting_normal_length):
@@ -109,7 +109,7 @@ def layout_rows(config, list_of_images):
 
 def create_collage(config, pdf_filename, list_of_images):
     canvas_row_list, stacked_rows_height = layout_rows(config, list_of_images)
-    canvas = Image.new('RGB', (config['canvas_width'], stacked_rows_height))
+    canvas = Image.new('RGB', (config['canvas_width']+1, stacked_rows_height+1))
     y = 0
     for p in canvas_row_list:
         canvas.paste(p, (0, y))
@@ -170,8 +170,6 @@ def create_tiled_image(config, pdf_filename):
         copy_images_to_pdf_dir(config, pdf_filename, working_dir)
     clean_up_working_files(working_dir)
 
-
-################# BEGIN Main Template With Config ######################
 
 def print_config_file(config):
     print(
